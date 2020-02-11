@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include<stdlib.h>
 
 void EncryptLigne1(char* T);
 void EncryptLigne2(char* T, int dec);
@@ -6,7 +7,7 @@ void DecryptLigne2(char* T, int dec);
 void LUT(char*cle, char* lut);
 void Affiche_LUT(char* cle, char* lut);
 void EncryptLigne3(char* T, char* lut);
-void EncryptFile(FILE* in, FILE* out, int methode, char* lut);
+void EncryptFile(FILE* fichier_in, FILE* fichier_out,int methode, char* lut,int taille_buffer);
 
 int main(void)
 {
@@ -17,29 +18,31 @@ int main(void)
 	int methode;
 	FILE* fichier_in;
        	FILE* fichier_out;
+	int taille_buffer=255;
+	int d;
 
 	printf("Entrez une phrase à coder :\n");
 	scanf("%[^\n]s",T);					//[^\n] pour prendre en compte les espaces
-	printf("Choisir le paramètre de décalage");
+	printf("Choisir le paramètre de décalage\n");
 	do{
 		scanf("%d",&dec);
 	}while(dec < 1 || dec > 26);
 
 	//Exercice 1
 	EncryptLigne1(T);					
-	printf("Phrase crypté avec code César (dec = 13) : %s\n",T);
+	printf("Phrase chiffrée avec code César (dec = 13) : %s\n",T);
 
 	//Exercice 2
 	EncryptLigne1(T);			//Décrypté revient à recrypté grâce à la symétrie
-	printf("Phrase décrypté avec code César(dec = 13) : %s\n",T);
+	printf("Phrase déchiffrée avec code César(dec = 13) : %s\n",T);
 
 	//Exercice 3
 	EncryptLigne2(T,dec);
-	printf("Phrase crypté avec un décalage de %d : %s \n",dec,T);
+	printf("Phrase chiffrée avec un décalage de %d : %s \n",dec,T);
 
 	//Exercice 4
 	DecryptLigne2(T,dec);
-	printf("Phrase décrypté avec un décalage de %d : %s\n",dec,T);
+	printf("Phrase déchiffrée avec un décalage de %d : %s\n",dec,T);
 	
 	//Exercice 5
 	LUT(cle,lut);
@@ -47,15 +50,17 @@ int main(void)
 
 	//Exercice 6
 	EncryptLigne3(T, lut);
-	printf("Phrase crypté avec LUT(zephir) : %s\n",T);
+	printf("Phrase chyffrée avec LUT(zephir) : %s\n",T);
 
 
 	//Exercice 7
-	fichier_in = fopen("home/kaiser/Document/ALgo_C/fichier_in.odt","r");
-	fichier_out = fopen("home/kaiser/Document/Algo_C/fichier_out.odt","w");
-	printf("Par quelle méthode voulez-vous crypter votre fichier?\n 1-César (décalage de 13)\n 2-Décalage libre \n 3- SUbstitution avec clé de chiffrement\n");
-	scanf("%d",&methode);	
-	EncryptFile(fichier_in,fichier_out,methode,lut);
+	fichier_in = fopen("/home/kaiser/Documents/Algo_C/fichier_in","r");
+	fichier_out = fopen("/home/kaiser/Documents/Algo_C/fichier_out.txt","w");
+	printf("\nPar quelle méthode voulez-vous crypter votre fichier?\n 1-César (décalage de 13)\n 2-Décalage libre \n 3-Substitution avec clé de chiffrement\n");
+	
+	scanf("%d",&methode);
+	while((d = getchar()) != '\n' && d != EOF);
+	EncryptFile(fichier_in,fichier_out,methode,lut,taille_buffer);
 	return 0 ;
 }
 
@@ -138,8 +143,10 @@ void EncryptLigne3(char* T, char* lut)
 
 	char Alpha[]="abcdefghijklmnopqrstuvwxyz";
 	int i,j;
-
+	
+	
 	for(i = 0; T[i] != '\0' ; i++){
+		
 		for(j = 0; T[i] != Alpha[j] ; j++);
 		T[i] = lut[j];
 	}
@@ -148,20 +155,42 @@ void EncryptLigne3(char* T, char* lut)
 
 //Exercice 7
 
-void EncryptFile(FILE* fichier_in, FILE* fichier_out, int methode,char* lut)
+void EncryptFile(FILE* fichier_in, FILE* fichier_out, int methode,char* lut, int taille_buffer)
 {
 	int dec;
+	char buffer[taille_buffer]; //Nombre de caractère maximum dans une ligne du fichier
 
 	switch(methode){
-		case '1': EncryptLigne1(fichier_in);
+		case 1 :  while(fgets(buffer, taille_buffer,fichier_in) != NULL){
+			  	EncryptLigne1(buffer);
+		       	  	fprintf(fichier_out,"%s",buffer);
+			  }
+			  fclose(fichier_out);
+			  printf("Fichier chiffré avec methode Cesar : %s\n",buffer);
 			  break;
-		case '2': printf("Choisir le paramètre décalage du cryptage : \n");
+
+		case 2: printf("Choisir le paramètre décalage du cryptage : \n");
 		          do{
 		             scanf("%d",&dec);		  
 	                  }while(dec < 1 ||  dec >  26);
-			  EncryptLigne2(fichier_in,dec);
+
+			  while(fgets(buffer,taille_buffer,fichier_in) != NULL){
+				  EncryptLigne2(buffer,dec);
+			  	fprintf(fichier_out,"%s",buffer);
+			  }
+			  fclose(fichier_out);
+			  printf("Fichier chiffré avec méthode de décalade : %s , décalage = %d\n",buffer,dec);
 			  break;
-		case '3' :EncryptLigne3(fichier_in,lut);
-			  break;
-}
+
+		case 3 :  while(fgets(buffer, taille_buffer, fichier_in) != NULL){
+				
+				EncryptLigne3(buffer,lut);
+			        fprintf(fichier_out,"%s",buffer);
+			}
+			fclose(fichier_out);
+			printf("Fichier chiffré par subtitution zephir : %s\n", buffer);
+			break;
+
+		default : break;
+	}
 }
